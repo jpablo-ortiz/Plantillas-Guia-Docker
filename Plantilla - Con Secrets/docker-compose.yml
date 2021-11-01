@@ -15,6 +15,7 @@ secrets:
 services:
 
   app:
+    container_name: app
     # Método #1 de hacer build (con la estructura del proyecto actual)
     # Este es posbile ya que dividimos en carpetas y cada carpeta tiene su
     # Dockerfile
@@ -29,6 +30,7 @@ services:
       - frontend-network
 
   web:
+    container_name: web
     # Método #2 de hacer build (con la estructura del proyecto actual)
     build:
       context: ./web
@@ -39,10 +41,13 @@ services:
       - frontend-network
 
   mongo-db:
+    container_name: mongo-db
     image: mongo:5.0.3
     restart: always    
+    ports:
+      - 27017:27017
     volumes:
-      - .dbdata:/data/db
+      - ./.dbdata:/data/db
     secrets:
       - mongo-database
       - mongo-username
@@ -55,8 +60,11 @@ services:
       - backend-network
 
   mongo-express: # Mongo-Express es una herramienta gráfica de administración de clientes web MongoDB.
-    image: mongo-express:1.0.0-alpha.4
+    container_name: mongo-express
+    image: mongo-express:0.54.0
     restart: always
+    depends_on:
+      - mongo-db
     ports:
       - 8081:8081
     secrets:
@@ -64,9 +72,12 @@ services:
       - mongo-username
       - mongo-password
     environment:
-      ME_CONFIG_MONGODB_AUTH_DATABASE: /run/secrets/mongo-database
+      ME_CONFIG_MONGODB_SERVER: mongo-db
       ME_CONFIG_MONGODB_ADMINUSERNAME: /run/secrets/mongo-username
       ME_CONFIG_MONGODB_ADMINPASSWORD: /run/secrets/mongo-password
-      #ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/ #TODO
+      # Es recomendable poner otro usuario y contraseña distintos al de admin
+      # Pero por simplicidad se pondrán los mismos de la siguiente forma:
+      ME_CONFIG_BASICAUTH_USERNAME: /run/secrets/mongo-username
+      ME_CONFIG_BASICAUTH_PASSWORD: /run/secrets/mongo-password
     networks:
       - backend-network
