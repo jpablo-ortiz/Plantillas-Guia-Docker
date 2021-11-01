@@ -1,0 +1,72 @@
+version: "3.8"
+
+networks:
+  backend-network:
+  frontend-network:
+
+secrets:
+  mongo-database:
+    file: envs/mongo-database.txt
+  mongo-username:
+    file: envs/mongo-username.txt
+  mongo-password:
+    file: envs/mongo-password.txt
+
+services:
+
+  app:
+    # Método #1 de hacer build (con la estructura del proyecto actual)
+    # Este es posbile ya que dividimos en carpetas y cada carpeta tiene su
+    # Dockerfile
+    build: app
+    restart: always
+    ports:
+      - 5000:5000
+    volumes:
+      - ./app/src:/src
+    networks:
+      - backend-network
+      - frontend-network
+
+  web:
+    # Método #2 de hacer build (con la estructura del proyecto actual)
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    ports:
+      - 80:80
+    networks:
+      - frontend-network
+
+  mongo-db:
+    image: mongo:5.0.3
+    restart: always    
+    volumes:
+      - .dbdata:/data/db
+    secrets:
+      - mongo-database
+      - mongo-username
+      - mongo-password
+    environment:
+      MONGO_INITDB_DATABASE: /run/secrets/mongo-database
+      MONGO_INITDB_ROOT_USERNAME: /run/secrets/mongo-username
+      MONGO_INITDB_ROOT_PASSWORD: /run/secrets/mongo-password
+    networks:
+      - backend-network
+
+  mongo-express: # Mongo-Express es una herramienta gráfica de administración de clientes web MongoDB.
+    image: mongo-express:1.0.0-alpha.4
+    restart: always
+    ports:
+      - 8081:8081
+    secrets:
+      - mongo-database
+      - mongo-username
+      - mongo-password
+    environment:
+      ME_CONFIG_MONGODB_AUTH_DATABASE: /run/secrets/mongo-database
+      ME_CONFIG_MONGODB_ADMINUSERNAME: /run/secrets/mongo-username
+      ME_CONFIG_MONGODB_ADMINPASSWORD: /run/secrets/mongo-password
+      #ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/ #TODO
+    networks:
+      - backend-network

@@ -1,0 +1,51 @@
+version: "3.8"
+
+networks:
+  backend-network:
+  frontend-network:
+
+services:
+
+  app:
+    # Método #1 de hacer build (con la estructura del proyecto actual)
+    # Este es posbile ya que dividimos en carpetas y cada carpeta tiene su
+    # Dockerfile
+    build: app
+    restart: always
+    ports:
+      - 5000:5000
+    volumes:
+      - ./app/src:/src
+    networks:
+      - backend-network
+      - frontend-network
+
+  web:
+    # Método #2 de hacer build (con la estructura del proyecto actual)
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    ports:
+      - 80:80
+    networks:
+      - frontend-network
+
+  mongo-db:
+    image: mongo:5.0.3
+    restart: always    
+    volumes:
+      - .dbdata:/data/db
+    env_file:
+      - ./envs/.mongo-db
+    networks:
+      - backend-network
+
+  mongo-express: # Mongo-Express es una herramienta gráfica de administración de clientes web MongoDB.
+    image: mongo-express:1.0.0-alpha.4
+    restart: always
+    ports:
+      - 8081:8081
+    env_file:
+      - ./envs/.mongo-express
+    networks:
+      - backend-network
